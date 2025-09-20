@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   TextField,
@@ -13,76 +13,91 @@ import {
 } from '@mui/material'
 import { Visibility, VisibilityOff, Factory } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
-function Login() {
-  const { login, isLoading, user } = useAuth()
+function SignUp() {
+  const { register, isLoading } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [validationErrors, setValidationErrors] = useState({})
   
-  const [loginData, setLoginData] = useState({
+  const [signupData, setSignupData] = useState({
     loginId: '',
-    password: ''
+    email: '',
+    password: '',
+    confirmPassword: ''
   })
-
-  // Navigate to dashboard after successful login
-  useEffect(() => {
-    if (user) {
-      const from = location.state?.from?.pathname || '/dashboard'
-      console.log('🚀 User logged in, navigating to:', from)
-      navigate(from, { replace: true })
-    }
-  }, [user, navigate, location])
 
   const validateForm = () => {
     const errors = {}
     
     // Login ID validation
-    if (!loginData.loginId.trim()) {
+    if (!signupData.loginId.trim()) {
       errors.loginId = 'Login ID is required'
-    } else if (loginData.loginId.length < 6 || loginData.loginId.length > 12) {
+    } else if (signupData.loginId.length < 6 || signupData.loginId.length > 12) {
       errors.loginId = 'Login ID should be unique and must be in between 6-12 characters'
     }
     
+    // Email validation
+    if (!signupData.email.trim()) {
+      errors.email = 'Email ID is required'
+    } else if (!/\S+@\S+\.\S+/.test(signupData.email)) {
+      errors.email = 'Email ID should not be duplicate in database'
+    }
+    
     // Password validation
-    if (!loginData.password) {
+    if (!signupData.password) {
       errors.password = 'Password is required'
+    } else if (signupData.password.length < 6) {
+      errors.password = 'Password should have lower case, an upper case and a special character and length should be more then 6 characters'
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])/.test(signupData.password)) {
+      errors.password = 'Password should have lower case, an upper case and a special character and length should be more then 6 characters'
+    }
+    
+    // Confirm password validation
+    if (!signupData.confirmPassword) {
+      errors.confirmPassword = 'Re-Enter Password is required'
+    } else if (signupData.password !== signupData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match'
     }
     
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
   }
 
-  const handleLoginSubmit = async (e) => {
+  const handleSignUpSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     
     if (!validateForm()) {
       return
     }
     
-    // Convert loginId to email format for backend compatibility
-    const credentials = {
-      email: loginData.loginId,
-      password: loginData.password
+    // Use email as the identifier for backend
+    const userData = {
+      email: signupData.email,
+      password: signupData.password,
+      role: 'Operator'
     }
     
-    console.log('🔄 Attempting login with:', credentials.email)
-    const result = await login(credentials)
-    
-    if (!result.success) {
+    const result = await register(userData)
+    if (result.success) {
+      setSuccess('Registration successful! Please login to continue.')
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
+    } else {
       setError(result.error)
     }
-    // Note: Navigation is handled by useEffect when user state changes
   }
 
-  const handleLoginChange = (e) => {
+  const handleSignUpChange = (e) => {
     const { name, value } = e.target
-    setLoginData({
-      ...loginData,
+    setSignupData({
+      ...signupData,
       [name]: value
     })
     
@@ -92,11 +107,6 @@ function Login() {
         ...validationErrors,
         [name]: ''
       })
-    }
-    
-    // Clear general error when user starts typing
-    if (error) {
-      setError('')
     }
   }
 
@@ -132,14 +142,11 @@ function Login() {
           >
             <Factory sx={{ fontSize: 48, mb: 2 }} />
             <Typography variant="h4" component="h1" fontWeight="bold">
-              Manufacturing System
-            </Typography>
-            <Typography variant="subtitle1" sx={{ opacity: 0.9, mt: 1 }}>
-              From Order to Output
+              App Logo
             </Typography>
           </Box>
 
-          {/* Login Form */}
+          {/* Sign Up Form */}
           <Box sx={{ p: 4 }}>
             {/* Alerts */}
             {error && (
@@ -147,36 +154,62 @@ function Login() {
                 {error}
               </Alert>
             )}
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {success}
+              </Alert>
+            )}
 
-            <Box component="form" onSubmit={handleLoginSubmit}>
+            <Typography variant="h5" component="h2" sx={{ mb: 3, textAlign: 'center' }}>
+              Sign Up Page
+            </Typography>
+
+            <Box component="form" onSubmit={handleSignUpSubmit}>
               <TextField
                 margin="normal"
                 required
                 fullWidth
                 id="loginId"
-                label="Email Address"
+                label="Enter Login Id"
                 name="loginId"
-                autoComplete="email"
+                autoComplete="username"
                 autoFocus
-                value={loginData.loginId}
-                onChange={handleLoginChange}
+                value={signupData.loginId}
+                onChange={handleSignUpChange}
                 variant="outlined"
                 error={!!validationErrors.loginId}
-                helperText={validationErrors.loginId || 'Use your email address to sign in'}
+                helperText={validationErrors.loginId}
                 sx={{ mb: 2 }}
-                placeholder="Enter your email address"
               />
+              
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Enter Email Id"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={signupData.email}
+                onChange={handleSignUpChange}
+                variant="outlined"
+                error={!!validationErrors.email}
+                helperText={validationErrors.email}
+                sx={{ mb: 2 }}
+              />
+              
               <TextField
                 margin="normal"
                 required
                 fullWidth
                 name="password"
-                label="Password"
+                label="Enter Password"
                 type={showPassword ? 'text' : 'password'}
                 id="password"
-                autoComplete="current-password"
-                value={loginData.password}
-                onChange={handleLoginChange}
+                autoComplete="new-password"
+                value={signupData.password}
+                onChange={handleSignUpChange}
                 variant="outlined"
                 error={!!validationErrors.password}
                 helperText={validationErrors.password}
@@ -193,8 +226,26 @@ function Login() {
                     </InputAdornment>
                   ),
                 }}
+                sx={{ mb: 2 }}
+              />
+              
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="confirmPassword"
+                label="Re-Enter Password"
+                type={showPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                autoComplete="new-password"
+                value={signupData.confirmPassword}
+                onChange={handleSignUpChange}
+                variant="outlined"
+                error={!!validationErrors.confirmPassword}
+                helperText={validationErrors.confirmPassword}
                 sx={{ mb: 3 }}
               />
+              
               <Button
                 type="submit"
                 fullWidth
@@ -203,27 +254,19 @@ function Login() {
                 disabled={isLoading}
                 size="large"
               >
-                {isLoading ? 'Signing In...' : 'SIGN IN'}
+                {isLoading ? 'Creating Account...' : 'SIGN UP'}
               </Button>
               
               <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
+                  Already have an account?{' '}
                   <Link
                     component="button"
                     variant="body2"
-                    onClick={() => navigate('/forgot-password')}
-                    sx={{ textDecoration: 'none', mr: 1 }}
-                  >
-                    Forget Password ?
-                  </Link>
-                  | {' '}
-                  <Link
-                    component="button"
-                    variant="body2"
-                    onClick={() => navigate('/signup')}
+                    onClick={() => navigate('/login')}
                     sx={{ textDecoration: 'none' }}
                   >
-                    Sign Up
+                    Login here
                   </Link>
                 </Typography>
               </Box>
@@ -235,4 +278,4 @@ function Login() {
   )
 }
 
-export default Login
+export default SignUp

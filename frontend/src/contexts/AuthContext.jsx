@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { authAPI } from '../services/api'
 
 const AuthContext = createContext({
@@ -32,7 +33,13 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: action.payload.user,
-        token: action.payload.token
+        token: action.payload.token,
+        isLoading: false
+      }
+    case 'INIT_LOADING':
+      return {
+        ...state,
+        isLoading: true
       }
     default:
       return state
@@ -43,34 +50,47 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
     token: null,
-    isLoading: false
+    isLoading: true  // Start with loading true to check localStorage
   })
 
   // Load user data from localStorage on init
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    
-    if (token && userData) {
+    const initializeAuth = () => {
       try {
-        const user = JSON.parse(userData)
-        dispatch({
-          type: 'SET_USER',
-          payload: { user, token }
-        })
+        const token = localStorage.getItem('token')
+        const userData = localStorage.getItem('user')
+        
+        if (token && userData) {
+          const user = JSON.parse(userData)
+          console.log('🔄 Restoring user session:', user.email)
+          dispatch({
+            type: 'SET_USER',
+            payload: { user, token }
+          })
+        } else {
+          console.log('🔄 No saved session found')
+          dispatch({ type: 'SET_LOADING', payload: false })
+        }
       } catch (error) {
-        console.error('Error parsing user data:', error)
+        console.error('❌ Error restoring user session:', error)
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        dispatch({ type: 'SET_LOADING', payload: false })
       }
     }
+
+    initializeAuth()
   }, [])
 
   const login = async (credentials) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
+      console.log('🔄 Attempting login for:', credentials.email)
+      
       const response = await authAPI.login(credentials)
       const { token, user } = response.data
+      
+      console.log('✅ Login successful:', user.email, user.role)
       
       // Store in localStorage
       localStorage.setItem('token', token)
@@ -81,8 +101,9 @@ export const AuthProvider = ({ children }) => {
         payload: { user, token }
       })
       
-      return { success: true }
+      return { success: true, user, token }
     } catch (error) {
+      console.error('❌ Login failed:', error.response?.data?.message || error.message)
       dispatch({ type: 'SET_LOADING', payload: false })
       return {
         success: false,
@@ -94,10 +115,15 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
+      console.log('🔄 Attempting registration for:', userData.email)
+      
       await authAPI.register(userData)
+      
+      console.log('✅ Registration successful')
       dispatch({ type: 'SET_LOADING', payload: false })
       return { success: true }
     } catch (error) {
+      console.error('❌ Registration failed:', error.response?.data?.message || error.message)
       dispatch({ type: 'SET_LOADING', payload: false })
       return {
         success: false,
@@ -107,6 +133,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
+    console.log('🔄 Logging out user')
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     dispatch({ type: 'LOGOUT' })

@@ -1,7 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 import enum
+import random
+import string
 
 db = SQLAlchemy()
 
@@ -213,5 +215,59 @@ class StockMovement(db.Model):
             'quantity': self.quantity,
             'reference': self.reference,
             'notes': self.notes,
+            'created_at': self.created_at.isoformat()
+        }
+
+class PasswordReset(db.Model):
+    """Track password reset requests and OTPs"""
+    __tablename__ = 'password_resets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    otp = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @staticmethod
+    def generate_otp():
+        """Generate a 6-digit OTP"""
+        return ''.join(random.choices(string.digits, k=6))
+    
+    @classmethod
+    def create_reset_request(cls, email):
+        """Create a new password reset request"""
+        # Remove any existing unused requests for this email
+        cls.query.filter_by(email=email, is_used=False).delete()
+        
+        otp = cls.generate_otp()
+        expires_at = datetime.utcnow() + timedelta(minutes=15)  # OTP expires in 15 minutes
+        
+        reset_request = cls(
+            email=email,
+            otp=otp,
+            expires_at=expires_at
+        )
+        
+        db.session.add(reset_request)
+        db.session.commit()
+        
+        return reset_request
+    
+    def is_valid(self):
+        """Check if OTP is still valid (not expired and not used)"""
+        return not self.is_used and datetime.utcnow() < self.expires_at
+    
+    def mark_as_used(self):
+        """Mark the OTP as used"""
+        self.is_used = True
+        db.session.commit()
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'expires_at': self.expires_at.isoformat(),
+            'is_used': self.is_used,
             'created_at': self.created_at.isoformat()
         }

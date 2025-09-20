@@ -41,7 +41,7 @@ const menuItems = [
   { 
     text: 'Dashboard', 
     icon: <DashboardIcon />, 
-    path: '/',
+    path: '/dashboard',
     description: 'Overview & KPIs'
   },
   { 
@@ -92,17 +92,22 @@ function Layout({ children }) {
   }
 
   const handleLogout = () => {
+    console.log('🔄 Logging out user')
     logout()
     handleProfileMenuClose()
+    navigate('/login', { replace: true })
   }
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'Admin': return 'error'
-      case 'Manager': return 'warning'
-      case 'Operator': return 'success'
-      default: return 'default'
-    }
+  const handleMenuNavigation = (path) => {
+    console.log('🚀 Navigating to:', path)
+    navigate(path)
+  }
+
+  // Check if current path matches menu item path
+  const isPathActive = (menuPath) => {
+    if (menuPath === '/dashboard' && location.pathname === '/dashboard') return true
+    if (menuPath !== '/dashboard' && location.pathname.startsWith(menuPath)) return true
+    return false
   }
 
   return (
@@ -124,18 +129,9 @@ function Layout({ children }) {
             Manufacturing System
           </Typography>
           
-          <Chip 
-            label={user?.role || 'User'} 
-            color={getRoleColor(user?.role)}
-            variant="outlined"
-            size="small"
-            sx={{ 
-              mr: 2, 
-              color: 'white',
-              borderColor: alpha('#fff', 0.3),
-              '& .MuiChip-label': { color: 'white' }
-            }}
-          />
+          <Typography variant="body2" sx={{ mr: 2, color: 'rgba(255,255,255,0.8)' }}>
+            Welcome, {user?.email?.split('@')[0]}
+          </Typography>
           
           <IconButton
             size="large"
@@ -191,12 +187,9 @@ function Layout({ children }) {
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                   {user?.email}
                 </Typography>
-                <Chip 
-                  label={user?.role} 
-                  size="small" 
-                  color={getRoleColor(user?.role)}
-                  sx={{ mt: 0.5 }}
-                />
+                <Typography variant="caption" color="text.secondary">
+                  Manufacturing System User
+                </Typography>
               </Box>
             </MenuItem>
             <Divider />
@@ -248,12 +241,12 @@ function Layout({ children }) {
           </Typography>
           <List sx={{ px: 1 }}>
             {menuItems.map((item) => {
-              const isSelected = location.pathname === item.path
+              const isSelected = isPathActive(item.path)
               return (
                 <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     selected={isSelected}
-                    onClick={() => navigate(item.path)}
+                    onClick={() => handleMenuNavigation(item.path)}
                     sx={{
                       borderRadius: 2,
                       mx: 1,

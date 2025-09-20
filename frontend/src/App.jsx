@@ -1,11 +1,13 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { CssBaseline, CircularProgress, Box } from '@mui/material'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import SignUp from './pages/SignUp'
+import ForgotPassword from './pages/ForgotPassword'
 import Dashboard from './pages/Dashboard'
-import ManufacturingOrders from './pages/ManufacturingOrderForm'
+import ManufacturingOrderForm from './pages/ManufacturingOrderForm'
 import BillOfMaterials from './pages/BillOfMaterials'
 import StockLedger from './pages/StockLedger'
 import WorkOrders from './pages/WorkOrders'
@@ -108,7 +110,35 @@ const theme = createTheme({
   },
 })
 
-function AppContent() {
+// Protected Route Component
+function ProtectedRoute({ children }) {
+  const { user, isLoading } = useAuth()
+  const location = useLocation()
+
+  if (isLoading) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        bgcolor="background.default"
+      >
+        <CircularProgress size={60} />
+      </Box>
+    )
+  }
+
+  if (!user) {
+    // Redirect to login but remember where they were trying to go
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  return children
+}
+
+// Public Route Component (redirect to dashboard if already logged in)
+function PublicRoute({ children }) {
   const { user, isLoading } = useAuth()
 
   if (isLoading) {
@@ -125,23 +155,116 @@ function AppContent() {
     )
   }
 
+  if (user) {
+    // Always redirect to dashboard for any authenticated user
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return children
+}
+
+function AppContent() {
   return (
-    <>
-      {!user ? (
-        <Login />
-      ) : (
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/manufacturing-orders" element={<ManufacturingOrders />} />
-            <Route path="/work-orders" element={<WorkOrders />} />
-            <Route path="/bills-of-materials" element={<BillOfMaterials />} />
-            <Route path="/stock-ledger" element={<StockLedger />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Layout>
-      )}
-    </>
+    <Routes>
+      {/* Public Routes */}
+      <Route 
+        path="/login" 
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } 
+      />
+      <Route 
+        path="/signup" 
+        element={
+          <PublicRoute>
+            <SignUp />
+          </PublicRoute>
+        } 
+      />
+      <Route 
+        path="/forgot-password" 
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        } 
+      />
+      
+      {/* Protected Routes - All users access the same pages */}
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <Navigate to="/dashboard" replace />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/manufacturing-orders" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ManufacturingOrderForm />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/manufacturing-orders/new" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ManufacturingOrderForm />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/work-orders" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <WorkOrders />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/bills-of-materials" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <BillOfMaterials />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/stock-ledger" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <StockLedger />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Catch all route - redirect to dashboard */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   )
 }
 
