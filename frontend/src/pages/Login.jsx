@@ -28,23 +28,23 @@ function Login() {
     password: ''
   })
 
-  // Navigate to dashboard after successful login
+  // Redirect if user is already logged in or after successful login
   useEffect(() => {
-    if (user) {
+    if (user && !isLoading) {
       const from = location.state?.from?.pathname || '/dashboard'
-      console.log('🚀 User logged in, navigating to:', from)
+      console.log('🔄 useEffect detected user login, navigating to:', from)
       navigate(from, { replace: true })
     }
-  }, [user, navigate, location])
+  }, [user, isLoading, navigate, location])
 
   const validateForm = () => {
     const errors = {}
     
-    // Login ID validation
+    // Email validation - accept any valid email format
     if (!loginData.loginId.trim()) {
-      errors.loginId = 'Login ID is required'
-    } else if (loginData.loginId.length < 6 || loginData.loginId.length > 12) {
-      errors.loginId = 'Login ID should be unique and must be in between 6-12 characters'
+      errors.loginId = 'Email address is required'
+    } else if (!loginData.loginId.includes('@')) {
+      errors.loginId = 'Please enter a valid email address'
     }
     
     // Password validation
@@ -75,8 +75,13 @@ function Login() {
     
     if (!result.success) {
       setError(result.error)
+      console.log('❌ Login failed:', result.error)
+    } else {
+      console.log('✅ Login successful! User:', result.user?.email, 'Role:', result.user?.role)
+      console.log('✅ Token received:', result.token ? 'Yes' : 'No')
+      console.log('🔄 Waiting for useEffect to handle navigation...')
+      // Navigation will be handled by useEffect when user state updates
     }
-    // Note: Navigation is handled by useEffect when user state changes
   }
 
   const handleLoginChange = (e) => {

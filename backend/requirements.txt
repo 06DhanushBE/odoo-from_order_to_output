@@ -5,3 +5,5 @@ PyJWT==2.8.0
 python-dotenv==1.0.0
 Werkzeug==2.3.7
 SQLAlchemy==2.0.21
+psycopg2-binary==2.9.9
+Flask-Migrate==4.0.5

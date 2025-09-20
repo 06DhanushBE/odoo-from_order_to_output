@@ -91,15 +91,20 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data
       
       console.log('✅ Login successful:', user.email, user.role)
+      console.log('� User can login with ANY email they registered with')
+      console.log('�🔄 Storing token and user data...')
       
       // Store in localStorage
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(user))
+      console.log('✅ Data stored in localStorage')
       
+      console.log('🔄 Dispatching LOGIN_SUCCESS...')
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user, token }
       })
+      console.log('✅ Auth state updated')
       
       return { success: true, user, token }
     } catch (error) {

@@ -52,6 +52,7 @@ function BillOfMaterials() {
     description: '',
     components: []
   })
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, bomId: null, bomName: '' })
 
   useEffect(() => {
     loadData()
@@ -108,6 +109,26 @@ function BillOfMaterials() {
       ...prev,
       components: prev.components.filter((_, i) => i !== index)
     }))
+  }
+
+  const handleDeleteBom = async () => {
+    try {
+      console.log('🔄 Attempting to delete BOM with ID:', deleteDialog.bomId)
+      const response = await bomsAPI.delete(deleteDialog.bomId)
+      console.log('✅ Delete response:', response)
+      setDeleteDialog({ open: false, bomId: null, bomName: '' })
+      loadData() // Reload the data
+      console.log('✅ BOM deleted successfully, data reloaded')
+    } catch (error) {
+      console.error('❌ Error deleting BOM:', error)
+      console.error('❌ Error details:', error.response?.data || error.message)
+      setError(`Failed to delete BOM: ${error.response?.data?.message || error.message}`)
+      setDeleteDialog({ open: false, bomId: null, bomName: '' })
+    }
+  }
+
+  const openDeleteDialog = (bomId, bomName) => {
+    setDeleteDialog({ open: true, bomId, bomName })
   }
 
   const getBomStats = () => {
@@ -345,6 +366,7 @@ function BillOfMaterials() {
                         startIcon={<DeleteIcon />}
                         variant="outlined"
                         color="error"
+                        onClick={() => openDeleteDialog(bom.id, bom.name)}
                       >
                         Delete
                       </Button>
@@ -471,6 +493,41 @@ function BillOfMaterials() {
             disabled={!newBom.name || newBom.components.length === 0}
           >
             Create BOM
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete BOM Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, bomId: null, bomName: '' })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: 'error.main' }}>
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the BOM "{deleteDialog.bomName}"?
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>
+            This action cannot be undone. All associated components will also be removed.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, bomId: null, bomName: '' })}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteBom} 
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+          >
+            Delete BOM
           </Button>
         </DialogActions>
       </Dialog>

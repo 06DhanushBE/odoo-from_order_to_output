@@ -153,11 +153,16 @@ function ManufacturingOrders() {
   const handleDeleteOrder = async (orderId) => {
     if (window.confirm('Are you sure you want to delete this manufacturing order?')) {
       try {
-        await manufacturingOrdersAPI.delete(orderId)
+        console.log('🔄 Attempting to delete Manufacturing Order with ID:', orderId)
+        const response = await manufacturingOrdersAPI.delete(orderId)
+        console.log('✅ Delete response:', response)
         setSuccess('Manufacturing Order deleted successfully!')
         loadOrders()
+        console.log('✅ Manufacturing Order deleted successfully, data reloaded')
       } catch (err) {
-        setError('Failed to delete manufacturing order')
+        console.error('❌ Error deleting Manufacturing Order:', err)
+        console.error('❌ Error details:', err.response?.data || err.message)
+        setError(`Failed to delete manufacturing order: ${err.response?.data?.message || err.message}`)
       }
     }
   }

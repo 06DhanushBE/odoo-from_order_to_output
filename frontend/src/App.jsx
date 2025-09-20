@@ -141,6 +141,7 @@ function ProtectedRoute({ children }) {
 function PublicRoute({ children }) {
   const { user, isLoading } = useAuth()
 
+  // Show loading spinner while authentication is being checked
   if (isLoading) {
     return (
       <Box 
@@ -155,11 +156,13 @@ function PublicRoute({ children }) {
     )
   }
 
+  // If user is authenticated, redirect to dashboard
   if (user) {
-    // Always redirect to dashboard for any authenticated user
+    console.log('👤 User already logged in, redirecting to dashboard')
     return <Navigate to="/dashboard" replace />
   }
 
+  // Show public route content for non-authenticated users
   return children
 }
 

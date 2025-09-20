@@ -43,15 +43,28 @@ export const manufacturingOrdersAPI = {
   getById: (id) => api.get(`/manufacturing-orders/${id}`),
   create: (data) => api.post('/manufacturing-orders', data),
   update: (id, data) => api.put(`/manufacturing-orders/${id}`, data),
+  delete: (id) => api.delete(`/manufacturing-orders/${id}`),
 }
 
 export const bomsAPI = {
   getAll: () => api.get('/boms'),
   create: (data) => api.post('/boms', data),
+  delete: (id) => api.delete(`/boms/${id}`),
 }
 
 export const stockAPI = {
   getAll: () => api.get('/stock'),
+}
+
+export const componentsAPI = {
+  create: (data) => api.post('/components', data),
+  update: (id, data) => api.put(`/components/${id}`, data),
+  delete: (id) => api.delete(`/components/${id}`),
+}
+
+export const workOrdersAPI = {
+  getByOrderId: (orderId) => api.get(`/work-orders/${orderId}`),
+  update: (id, data) => api.put(`/work-orders/${id}`, data),
 }
 
 export const dashboardAPI = {

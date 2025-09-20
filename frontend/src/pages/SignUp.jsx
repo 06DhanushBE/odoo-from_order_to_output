@@ -85,7 +85,7 @@ function SignUp() {
     
     const result = await register(userData)
     if (result.success) {
-      setSuccess('Registration successful! Please login to continue.')
+      setSuccess(`Registration successful! You can now login with ${signupData.email}`)
       setTimeout(() => {
         navigate('/login')
       }, 2000)
