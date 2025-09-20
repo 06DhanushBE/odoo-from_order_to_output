@@ -113,15 +113,10 @@ function BillOfMaterials() {
 
   const handleDeleteBom = async () => {
     try {
-      console.log('🔄 Attempting to delete BOM with ID:', deleteDialog.bomId)
-      const response = await bomsAPI.delete(deleteDialog.bomId)
-      console.log('✅ Delete response:', response)
+      await bomsAPI.delete(deleteDialog.bomId)
       setDeleteDialog({ open: false, bomId: null, bomName: '' })
       loadData() // Reload the data
-      console.log('✅ BOM deleted successfully, data reloaded')
     } catch (error) {
-      console.error('❌ Error deleting BOM:', error)
-      console.error('❌ Error details:', error.response?.data || error.message)
       setError(`Failed to delete BOM: ${error.response?.data?.message || error.message}`)
       setDeleteDialog({ open: false, bomId: null, bomName: '' })
     }

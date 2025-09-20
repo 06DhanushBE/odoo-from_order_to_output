@@ -42,7 +42,7 @@ import {
   Edit,
   Refresh,
 } from '@mui/icons-material'
-import { manufacturingOrdersAPI } from '../services/api'
+import { manufacturingOrdersAPI, workOrdersAPI } from '../services/api'
 
 const workOrderStatuses = {
   'Pending': { color: 'info', icon: <Schedule /> },
@@ -95,20 +95,62 @@ function WorkOrders() {
 
   const handleStatusUpdate = async (workOrderId, newStatus) => {
     try {
-      // In a real implementation, you would call the API to update work order status
-      console.log(`Updating work order ${workOrderId} to status ${newStatus}`)
+      setError('')
       
-      // Update local state for demo
+      // Call API to update work order status using axios-based API
+      const response = await workOrdersAPI.update(workOrderId, { status: newStatus })
+      const result = response.data
+      
+      // Update local work order state
       setWorkOrders(prev => 
         prev.map(wo => 
           wo.id === workOrderId 
-            ? { ...wo, status: newStatus } 
+            ? { ...wo, status: newStatus, ...result } 
             : wo
         )
       )
+      
+      // Show cascade information if available
+      if (result.status_cascade || result.manufacturing_order_updated) {
+        // Refresh manufacturing orders to show updated status
+        const ordersRes = await manufacturingOrdersAPI.getAll()
+        setManufacturingOrders(ordersRes.data)
+      }
+      
     } catch (error) {
-      console.error('Error updating work order status:', error)
-      setError('Failed to update work order status.')
+      setError(`Failed to update work order status: ${error.response?.data?.message || error.message}`)
+    }
+  }
+
+  const handleCompleteWorkOrder = async (workOrderId, notes = '') => {
+    try {
+      setError('')
+      
+      // Call API to complete work order using axios-based API
+      const response = await workOrdersAPI.complete(workOrderId, { 
+        notes: notes,
+        quality_check: true 
+      })
+      const result = response.data
+      
+      // Update local work order state
+      setWorkOrders(prev => 
+        prev.map(wo => 
+          wo.id === workOrderId 
+            ? { ...wo, ...result } 
+            : wo
+        )
+      )
+      
+      // Show cascade information if manufacturing order was completed
+      if (result.manufacturing_order_updated) {
+        // Refresh manufacturing orders to show updated status
+        const ordersRes = await manufacturingOrdersAPI.getAll()
+        setManufacturingOrders(ordersRes.data)
+      }
+      
+    } catch (error) {
+      setError(`Failed to complete work order: ${error.response?.data?.message || error.message}`)
     }
   }
 
@@ -153,7 +195,7 @@ function WorkOrders() {
           <Tooltip key="complete" title="Complete Work Order">
             <IconButton 
               color="success" 
-              onClick={() => handleStatusUpdate(workOrder.id, 'Completed')}
+              onClick={() => handleCompleteWorkOrder(workOrder.id, `Completed at ${new Date().toLocaleString()}`)}
               size="small"
             >
               <CheckCircle />
@@ -175,7 +217,7 @@ function WorkOrders() {
           <Tooltip key="complete" title="Complete Work Order">
             <IconButton 
               color="success" 
-              onClick={() => handleStatusUpdate(workOrder.id, 'Completed')}
+              onClick={() => handleCompleteWorkOrder(workOrder.id, `Completed at ${new Date().toLocaleString()}`)}
               size="small"
             >
               <CheckCircle />

@@ -59,6 +59,7 @@ class User(db.Model):
     phone = db.Column(db.String(20))
     department = db.Column(db.String(50))
     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.OPERATOR)
+    avatar = db.Column(db.String(200))  # Path to user avatar image
     is_active = db.Column(db.Boolean, default=True)
     last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -79,6 +80,7 @@ class User(db.Model):
             'phone': self.phone,
             'department': self.department,
             'role': self.role.value,
+            'avatar': self.avatar,
             'is_active': self.is_active,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat()
@@ -92,6 +94,7 @@ class Component(db.Model):
     quantity_on_hand = db.Column(db.Integer, nullable=False, default=0)
     unit_cost = db.Column(db.Float, default=0.0)
     supplier = db.Column(db.String(100))
+    reorder_level = db.Column(db.Integer, default=10)  # Add missing reorder_level column
     
     def to_dict(self):
         return {
@@ -100,7 +103,7 @@ class Component(db.Model):
             'quantity_on_hand': self.quantity_on_hand,
             'unit_cost': self.unit_cost,
             'supplier': self.supplier,
-            'reorder_level': getattr(self, 'reorder_level', 10)
+            'reorder_level': self.reorder_level
         }
 
 class Product(db.Model):
@@ -143,6 +146,11 @@ class BillOfMaterial(db.Model):
     
     # Relationship to BOM components
     bom_components = db.relationship('BOMComponent', backref='bill_of_material', cascade='all, delete-orphan')
+    
+    @property
+    def components(self):
+        """Alias for bom_components to maintain compatibility"""
+        return self.bom_components
     
     def to_dict(self):
         total_cost = sum(comp.component.unit_cost * comp.quantity_required 

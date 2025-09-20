@@ -33,6 +33,7 @@ import {
 import {
   Add as AddIcon,
   Edit as EditIcon,
+  Delete as DeleteIcon,
   Inventory as InventoryIcon,
   Warning as WarningIcon,
   TrendingUp as TrendingUpIcon,
@@ -40,8 +41,9 @@ import {
   Refresh as RefreshIcon,
   AttachMoney as CostIcon,
   Business as SupplierIcon,
+  MonetizationOn as PriceUpdateIcon,
 } from '@mui/icons-material'
-import { stockAPI } from '../services/api'
+import { stockAPI, componentsAPI } from '../services/api'
 
 function StockLedger() {
   const theme = useTheme()
@@ -50,11 +52,13 @@ function StockLedger() {
   const [error, setError] = useState('')
   const [createDialog, setCreateDialog] = useState({ open: false })
   const [editDialog, setEditDialog] = useState({ open: false, component: null })
+  const [priceDialog, setPriceDialog] = useState({ open: false, component: null })
   const [newComponent, setNewComponent] = useState({
     name: '',
     quantity_on_hand: 0,
     unit_cost: 0,
-    supplier: ''
+    supplier: '',
+    reorder_level: 10
   })
 
   useEffect(() => {
@@ -77,40 +81,69 @@ function StockLedger() {
 
   const handleCreateComponent = async () => {
     try {
-      // In a real implementation, call the API to create component
-      console.log('Creating component:', newComponent)
+      setError('')
+      await componentsAPI.create(newComponent)
       setCreateDialog({ open: false })
-      setNewComponent({ name: '', quantity_on_hand: 0, unit_cost: 0, supplier: '' })
-      loadStock()
+      setNewComponent({ name: '', quantity_on_hand: 0, unit_cost: 0, supplier: '', reorder_level: 10 })
+      await loadStock()
     } catch (error) {
       console.error('Error creating component:', error)
-      setError('Failed to create component.')
+      setError('Failed to create component. Please try again.')
     }
   }
 
   const handleEditComponent = async () => {
     try {
-      // In a real implementation, call the API to update component
-      console.log('Updating component:', editDialog.component)
+      setError('')
+      const { id, ...updateData } = editDialog.component
+      await componentsAPI.update(id, updateData)
       setEditDialog({ open: false, component: null })
-      loadStock()
+      await loadStock()
     } catch (error) {
       console.error('Error updating component:', error)
-      setError('Failed to update component.')
+      setError('Failed to update component. Please try again.')
     }
   }
 
-  const getStockStatus = (quantity) => {
+  const handleDeleteComponent = async (componentId, componentName) => {
+    if (!window.confirm(`Are you sure you want to delete "${componentName}"? This action cannot be undone.`)) {
+      return
+    }
+    
+    try {
+      setError('')
+      await componentsAPI.delete(componentId)
+      await loadStock()
+    } catch (error) {
+      console.error('Error deleting component:', error)
+      setError('Failed to delete component. Please try again.')
+    }
+  }
+
+  const handleUpdatePrice = async () => {
+    try {
+      setError('')
+      const { id, unit_cost } = priceDialog.component
+      await componentsAPI.update(id, { unit_cost })
+      setPriceDialog({ open: false, component: null })
+      await loadStock()
+    } catch (error) {
+      console.error('Error updating price:', error)
+      setError('Failed to update price. Please try again.')
+    }
+  }
+
+  const getStockStatus = (quantity, reorderLevel = 10) => {
     if (quantity === 0) return { color: 'error', label: 'Out of Stock', severity: 'high' }
-    if (quantity < 10) return { color: 'warning', label: 'Low Stock', severity: 'medium' }
-    if (quantity < 50) return { color: 'info', label: 'Normal', severity: 'low' }
+    if (quantity <= reorderLevel) return { color: 'warning', label: 'Low Stock', severity: 'medium' }
+    if (quantity < reorderLevel * 2) return { color: 'info', label: 'Normal', severity: 'low' }
     return { color: 'success', label: 'In Stock', severity: 'none' }
   }
 
   const getStockStats = () => {
     const totalComponents = components.length
     const outOfStock = components.filter(c => c.quantity_on_hand === 0).length
-    const lowStock = components.filter(c => c.quantity_on_hand > 0 && c.quantity_on_hand < 10).length
+    const lowStock = components.filter(c => c.quantity_on_hand > 0 && c.quantity_on_hand <= (c.reorder_level || 10)).length
     const totalValue = components.reduce((sum, c) => sum + (c.quantity_on_hand * (c.unit_cost || 0)), 0)
 
     return { totalComponents, outOfStock, lowStock, totalValue }
@@ -262,7 +295,7 @@ function StockLedger() {
                 </TableHead>
                 <TableBody>
                   {components.map((component) => {
-                    const status = getStockStatus(component.quantity_on_hand)
+                    const status = getStockStatus(component.quantity_on_hand, component.reorder_level)
                     const totalValue = component.quantity_on_hand * (component.unit_cost || 0)
                     
                     return (
@@ -329,14 +362,34 @@ function StockLedger() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Tooltip title="Edit Component">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => setEditDialog({ open: true, component: { ...component } })}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Box display="flex" gap={1}>
+                            <Tooltip title="Edit Component">
+                              <IconButton 
+                                size="small" 
+                                onClick={() => setEditDialog({ open: true, component: { ...component } })}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Update Price">
+                              <IconButton 
+                                size="small" 
+                                color="primary"
+                                onClick={() => setPriceDialog({ open: true, component: { ...component } })}
+                              >
+                                <PriceUpdateIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Component">
+                              <IconButton 
+                                size="small" 
+                                color="error"
+                                onClick={() => handleDeleteComponent(component.id, component.name)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     )
@@ -370,7 +423,7 @@ function StockLedger() {
         open={createDialog.open}
         onClose={() => {
           setCreateDialog({ open: false })
-          setNewComponent({ name: '', quantity_on_hand: 0, unit_cost: 0, supplier: '' })
+          setNewComponent({ name: '', quantity_on_hand: 0, unit_cost: 0, supplier: '', reorder_level: 10 })
         }}
         maxWidth="sm"
         fullWidth
@@ -406,12 +459,20 @@ function StockLedger() {
               onChange={(e) => setNewComponent({ ...newComponent, supplier: e.target.value })}
               fullWidth
             />
+            <TextField
+              label="Reorder Level"
+              type="number"
+              value={newComponent.reorder_level}
+              onChange={(e) => setNewComponent({ ...newComponent, reorder_level: parseInt(e.target.value) || 10 })}
+              fullWidth
+              helperText="Alert when stock falls below this level"
+            />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => {
             setCreateDialog({ open: false })
-            setNewComponent({ name: '', quantity_on_hand: 0, unit_cost: 0, supplier: '' })
+            setNewComponent({ name: '', quantity_on_hand: 0, unit_cost: 0, supplier: '', reorder_level: 10 })
           }}>
             Cancel
           </Button>
@@ -476,6 +537,17 @@ function StockLedger() {
                 }))}
                 fullWidth
               />
+              <TextField
+                label="Reorder Level"
+                type="number"
+                value={editDialog.component.reorder_level || 10}
+                onChange={(e) => setEditDialog(prev => ({
+                  ...prev,
+                  component: { ...prev.component, reorder_level: parseInt(e.target.value) || 10 }
+                }))}
+                fullWidth
+                helperText="Alert when stock falls below this level"
+              />
             </Box>
           )}
         </DialogContent>
@@ -485,6 +557,75 @@ function StockLedger() {
           </Button>
           <Button onClick={handleEditComponent} variant="contained">
             Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Price Update Dialog */}
+      <Dialog
+        open={priceDialog.open}
+        onClose={() => setPriceDialog({ open: false, component: null })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={2}>
+            <PriceUpdateIcon color="primary" />
+            Update Price
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {priceDialog.component && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Component: <strong>{priceDialog.component.name}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current Quantity: <strong>{priceDialog.component.quantity_on_hand} units</strong>
+              </Typography>
+              <TextField
+                label="Current Price"
+                value={`$${priceDialog.component.unit_cost || 0}`}
+                disabled
+                fullWidth
+                sx={{ bgcolor: 'grey.50' }}
+              />
+              <TextField
+                label="New Unit Cost ($)"
+                type="number"
+                step="0.01"
+                value={priceDialog.component.unit_cost || ''}
+                onChange={(e) => setPriceDialog(prev => ({
+                  ...prev,
+                  component: { ...prev.component, unit_cost: parseFloat(e.target.value) || 0 }
+                }))}
+                fullWidth
+                required
+                autoFocus
+                helperText="Enter the new unit cost for this component"
+              />
+              {priceDialog.component.unit_cost && (
+                <Box sx={{ p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
+                  <Typography variant="body2">
+                    <strong>Total Value Change:</strong> 
+                    {` $${((priceDialog.component.unit_cost || 0) * priceDialog.component.quantity_on_hand).toFixed(2)}`}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPriceDialog({ open: false, component: null })}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleUpdatePrice} 
+            variant="contained"
+            disabled={!priceDialog.component?.unit_cost}
+            startIcon={<PriceUpdateIcon />}
+          >
+            Update Price
           </Button>
         </DialogActions>
       </Dialog>

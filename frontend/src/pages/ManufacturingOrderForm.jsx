@@ -153,15 +153,10 @@ function ManufacturingOrders() {
   const handleDeleteOrder = async (orderId) => {
     if (window.confirm('Are you sure you want to delete this manufacturing order?')) {
       try {
-        console.log('🔄 Attempting to delete Manufacturing Order with ID:', orderId)
-        const response = await manufacturingOrdersAPI.delete(orderId)
-        console.log('✅ Delete response:', response)
+        await manufacturingOrdersAPI.delete(orderId)
         setSuccess('Manufacturing Order deleted successfully!')
         loadOrders()
-        console.log('✅ Manufacturing Order deleted successfully, data reloaded')
       } catch (err) {
-        console.error('❌ Error deleting Manufacturing Order:', err)
-        console.error('❌ Error details:', err.response?.data || err.message)
         setError(`Failed to delete manufacturing order: ${err.response?.data?.message || err.message}`)
       }
     }
@@ -169,11 +164,21 @@ function ManufacturingOrders() {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await manufacturingOrdersAPI.update(orderId, { status: newStatus })
-      setSuccess(`Order status updated to ${newStatus}`)
+      const response = await manufacturingOrdersAPI.update(orderId, { status: newStatus })
+      
+      // Check for cascading status updates
+      if (response.data.work_orders_updated && response.data.work_orders_updated.length > 0) {
+        const affected = response.data.work_orders_updated.length
+        setSuccess(`Order status updated to ${newStatus}! ${affected} work orders were also updated automatically. 🔄`)
+      } else if (response.data.status_cascade?.stock_consumed) {
+        setSuccess(`Manufacturing order completed! Stock has been consumed and all work orders completed. ✅`)
+      } else {
+        setSuccess(`Order status updated to ${newStatus}`)
+      }
+      
       loadOrders()
     } catch (err) {
-      setError('Failed to update order status')
+      setError(`Failed to update order status: ${err.response?.data?.message || err.message}`)
     }
   }
 

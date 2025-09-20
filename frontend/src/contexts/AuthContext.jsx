@@ -8,7 +8,8 @@ const AuthContext = createContext({
   isLoading: false,
   login: () => {},
   logout: () => {},
-  register: () => {}
+  register: () => {},
+  updateUser: () => {}
 })
 
 const authReducer = (state, action) => {
@@ -62,13 +63,11 @@ export const AuthProvider = ({ children }) => {
         
         if (token && userData) {
           const user = JSON.parse(userData)
-          console.log('🔄 Restoring user session:', user.email)
           dispatch({
             type: 'SET_USER',
             payload: { user, token }
           })
         } else {
-          console.log('🔄 No saved session found')
           dispatch({ type: 'SET_LOADING', payload: false })
         }
       } catch (error) {
@@ -85,26 +84,18 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      console.log('🔄 Attempting login for:', credentials.email)
       
       const response = await authAPI.login(credentials)
       const { token, user } = response.data
       
-      console.log('✅ Login successful:', user.email, user.role)
-      console.log('� User can login with ANY email they registered with')
-      console.log('�🔄 Storing token and user data...')
-      
       // Store in localStorage
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(user))
-      console.log('✅ Data stored in localStorage')
       
-      console.log('🔄 Dispatching LOGIN_SUCCESS...')
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user, token }
       })
-      console.log('✅ Auth state updated')
       
       return { success: true, user, token }
     } catch (error) {
@@ -120,11 +111,9 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      console.log('🔄 Attempting registration for:', userData.email)
       
       await authAPI.register(userData)
       
-      console.log('✅ Registration successful')
       dispatch({ type: 'SET_LOADING', payload: false })
       return { success: true }
     } catch (error) {
@@ -138,10 +127,20 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
-    console.log('🔄 Logging out user')
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     dispatch({ type: 'LOGOUT' })
+  }
+
+  const updateUser = (updatedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+    dispatch({ 
+      type: 'LOGIN_SUCCESS', 
+      payload: { 
+        user: updatedUser, 
+        token: state.token 
+      } 
+    })
   }
 
   return (
@@ -150,7 +149,8 @@ export const AuthProvider = ({ children }) => {
         ...state,
         login,
         logout,
-        register
+        register,
+        updateUser
       }}
     >
       {children}

@@ -32,7 +32,6 @@ function Login() {
   useEffect(() => {
     if (user && !isLoading) {
       const from = location.state?.from?.pathname || '/dashboard'
-      console.log('🔄 useEffect detected user login, navigating to:', from)
       navigate(from, { replace: true })
     }
   }, [user, isLoading, navigate, location])
@@ -70,18 +69,12 @@ function Login() {
       password: loginData.password
     }
     
-    console.log('🔄 Attempting login with:', credentials.email)
     const result = await login(credentials)
     
     if (!result.success) {
       setError(result.error)
-      console.log('❌ Login failed:', result.error)
-    } else {
-      console.log('✅ Login successful! User:', result.user?.email, 'Role:', result.user?.role)
-      console.log('✅ Token received:', result.token ? 'Yes' : 'No')
-      console.log('🔄 Waiting for useEffect to handle navigation...')
-      // Navigation will be handled by useEffect when user state updates
     }
+    // Navigation will be handled by useEffect when user state updates
   }
 
   const handleLoginChange = (e) => {

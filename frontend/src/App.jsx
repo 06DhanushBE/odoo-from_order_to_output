@@ -11,6 +11,7 @@ import ManufacturingOrderForm from './pages/ManufacturingOrderForm'
 import BillOfMaterials from './pages/BillOfMaterials'
 import StockLedger from './pages/StockLedger'
 import WorkOrders from './pages/WorkOrders'
+import ProfileSettings from './pages/ProfileSettings'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 // Modern theme configuration
@@ -158,7 +159,6 @@ function PublicRoute({ children }) {
 
   // If user is authenticated, redirect to dashboard
   if (user) {
-    console.log('👤 User already logged in, redirecting to dashboard')
     return <Navigate to="/dashboard" replace />
   }
 
@@ -260,6 +260,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <StockLedger />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProfileSettings />
             </Layout>
           </ProtectedRoute>
         } 

@@ -92,14 +92,12 @@ function Layout({ children }) {
   }
 
   const handleLogout = () => {
-    console.log('🔄 Logging out user')
     logout()
     handleProfileMenuClose()
     navigate('/login', { replace: true })
   }
 
   const handleMenuNavigation = (path) => {
-    console.log('🚀 Navigating to:', path)
     navigate(path)
   }
 
@@ -193,7 +191,7 @@ function Layout({ children }) {
               </Box>
             </MenuItem>
             <Divider />
-            <MenuItem onClick={handleProfileMenuClose}>
+            <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/profile'); }}>
               <SettingsIcon sx={{ mr: 1 }} />
               Profile Settings
             </MenuItem>
