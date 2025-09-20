@@ -1,0 +1,118 @@
+Here is the complete prompt designed to generate your full-stack application using an AI code generation tool.
+
+***
+
+### **Prompt for AI Code Generation**
+
+**Project Goal:** Generate a complete, full-stack manufacturing management web application based on the provided specifications. The application will allow users to create, track, and manage manufacturing orders, bills of materials, and inventory.
+
+**Core Tech Stack:**
+* **Frontend:** React.js
+* **Backend:** Flask (Python)
+* **Database:** PostgreSQL
+* **UI Components:** Use Material-UI (MUI) for a clean, professional look and to speed up development.
+* **API Communication:** Use Axios on the frontend.
+* **Database ORM:** Use SQLAlchemy on the backend.
+* **Authentication:** Use JWT (JSON Web Tokens) for securing the API.
+
+---
+
+### ## Part 1: Database Schema
+
+First, define the PostgreSQL database schema using SQLAlchemy models. The schema must support the following entities and relationships:
+
+1.  **Users:**
+    * `id` (Primary Key)
+    * `email` (String, Unique, Not Nullable)
+    * `password_hash` (String, Not Nullable)
+    * `role` (String, e.g., 'Manager', 'Operator', 'Admin')
+
+2.  **ManufacturingOrders (MO):**
+    * `id` (Primary Key, e.g., "MO-001")
+    * `product_name` (String)
+    * `quantity` (Integer)
+    * `deadline` (DateTime)
+    * `status` (String, Enum: "Planned", "In Progress", "Done", "Canceled")
+    * `bom_id` (Foreign Key to BillsOfMaterial)
+
+3.  **BillsOfMaterial (BOM):**
+    * `id` (Primary Key)
+    * `name` (String, e.g., "Wooden Table Recipe")
+    * `description` (Text)
+
+4.  **Components (Raw Materials/Products):**
+    * `id` (Primary Key)
+    * `name` (String, e.g., "Wooden Leg", "Screw")
+    * `quantity_on_hand` (Integer, represents stock level)
+
+5.  **BOM_Components (Join Table):**
+    * `bom_id` (Foreign Key to BillsOfMaterial)
+    * `component_id` (Foreign Key to Components)
+    * `quantity_required` (Integer)
+
+6.  **WorkOrders (Operations):**
+    * `id` (Primary Key)
+    * `name` (String, e.g., "Assembly", "Painting")
+    * `duration_minutes` (Integer)
+    * `status` (String, Enum: "Pending", "Started", "Paused", "Completed")
+    * `manufacturing_order_id` (Foreign Key to ManufacturingOrders)
+
+---
+
+### ## Part 2: Backend - Flask API
+
+Create a Flask backend with a RESTful API. It should be in a `/backend` directory.
+
+1.  **Authentication Endpoints:**
+    * `POST /api/auth/login`: Takes `email` and `password`, returns a JWT token on success.
+    * `POST /api/auth/register`: Creates a new user.
+
+2.  **Manufacturing Order Endpoints (Protected):**
+    * `GET /api/manufacturing-orders`: Returns a list of all MOs. Must support filtering by status via a query parameter (e.g., `?status=InProgress`).
+    * `GET /api/manufacturing-orders/<id>`: Returns details for a single MO.
+    * `POST /api/manufacturing-orders`: Creates a new MO. Expects a JSON body with `product_name`, `quantity`, `deadline`, and `bom_id`.
+    * `PUT /api/manufacturing-orders/<id>`: Updates an MO, primarily for changing its `status`.
+
+3.  **BOM Endpoints (Protected):**
+    * `GET /api/boms`: Returns a list of all BOMs.
+    * `POST /api/boms`: Creates a new BOM with its required components.
+
+4.  **Stock/Component Endpoints (Protected):**
+    * `GET /api/stock`: Returns a list of all components and their `quantity_on_hand` (the Stock Ledger).
+
+---
+
+### ## Part 3: Frontend - React Application
+
+Create the React frontend in a `/frontend` directory. Implement the UI based on the provided mockups.
+
+1.  **Core Layout:**
+    * Create a main layout with a persistent header and a right-hand sidebar for the **Master Menu** (Navigation).
+    * The header should contain a user avatar that opens a **Profile Menu** on the left.
+    * Use **React Router** for navigation.
+
+2.  **Login Page:**
+    * A simple form with Email and Password fields.
+    * On successful login, store the JWT token and redirect to the dashboard.
+
+3.  **Dashboard Page (Default Route `/`):**
+    * This is the "App Dashboard" from the mockups.
+    * At the top, display four summary cards showing the counts for "Planned", "In Progress", "Done", and "Canceled" orders. Fetch this data from the backend.
+    * Below the cards, display a table of all Manufacturing Orders.
+    * Include filter buttons above the table that, when clicked, call the `GET /api/manufacturing-orders?status=` endpoint and update the table with the filtered results.
+
+4.  **Manufacturing Order Form Page:**
+    * A dedicated page with a form to create a new Manufacturing Order.
+    * The form fields must match the mockup: Product, Quantity, Bill of Material (as a dropdown fetched from `/api/boms`), and Deadline.
+
+5.  **Bill of Materials Page:**
+    * Display a list of all BOMs.
+    * Include functionality to view the details of a BOM (i.e., its required components and quantities).
+
+6.  **Stock Ledger Page:**
+    * Display a table of all components (products) and their current `quantity_on_hand`, fetched from `/api/stock`.
+
+---
+
+**Final Instruction:**
+Generate the complete code for this full-stack application. Include all necessary files, components, API routes, and database models. The final output should be structured with separate `/frontend` and `/backend` directories and be ready to run after installing dependencies and setting up the database connection.
