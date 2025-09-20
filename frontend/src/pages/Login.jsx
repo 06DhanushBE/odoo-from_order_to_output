@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Card,
@@ -8,64 +8,184 @@ import {
   Typography,
   Alert,
   Container,
+  Paper,
+  Tab,
+  Tabs,
+  IconButton,
+  InputAdornment,
 } from '@mui/material'
-import { authAPI } from '../services/api'
-import AuthContext from '../contexts/AuthContext'
+import { Visibility, VisibilityOff, Factory, AccountCircle } from '@mui/icons-material'
+import { useAuth } from '../contexts/AuthContext'
+
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`auth-tabpanel-${index}`}
+      aria-labelledby={`auth-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  )
+}
 
 function Login() {
-  const { login } = useContext(AuthContext)
-  const [formData, setFormData] = useState({
+  const { login, register, isLoading } = useAuth()
+  const [tabValue, setTabValue] = useState(0)
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  
+  const [loginData, setLoginData] = useState({
     email: '',
     password: ''
   })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  
+  const [registerData, setRegisterData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'Operator'
+  })
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue)
     setError('')
+    setSuccess('')
+  }
 
-    try {
-      const response = await authAPI.login(formData)
-      const { token, user } = response.data
-      login(user, token)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed')
-    } finally {
-      setLoading(false)
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    
+    const result = await login(loginData)
+    if (!result.success) {
+      setError(result.error)
     }
   }
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    
+    if (registerData.password !== registerData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+    
+    const { confirmPassword, ...userData } = registerData
+    const result = await register(userData)
+    
+    if (result.success) {
+      setSuccess('Registration successful! Please login to continue.')
+      setTabValue(0)
+      setRegisterData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'Operator'
+      })
+    } else {
+      setError(result.error)
+    }
+  }
+
+  const handleLoginChange = (e) => {
+    setLoginData({
+      ...loginData,
       [e.target.name]: e.target.value
     })
   }
 
+  const handleRegisterChange = (e) => {
+    setRegisterData({
+      ...registerData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleDemoLogin = () => {
+    setLoginData({
+      email: 'admin@example.com',
+      password: 'admin123'
+    })
+  }
+
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Card sx={{ mt: 8, width: '100%' }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography component="h1" variant="h4" align="center" gutterBottom>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 4,
+      }}
+    >
+      <Container component="main" maxWidth="sm">
+        <Paper
+          elevation={24}
+          sx={{
+            borderRadius: 4,
+            overflow: 'hidden',
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+              color: 'white',
+              py: 4,
+              textAlign: 'center',
+            }}
+          >
+            <Factory sx={{ fontSize: 48, mb: 2 }} />
+            <Typography variant="h4" component="h1" fontWeight="bold">
               Manufacturing System
             </Typography>
-            <Typography variant="h6" align="center" color="textSecondary" gutterBottom>
-              Please sign in to continue
+            <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+              From Order to Output - All in One Flow
             </Typography>
-            
-            {error && <Alert severity="error" sx={{ mt: 2, mb: 2 }}>{error}</Alert>}
-            
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          </Box>
+
+          {/* Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              aria-label="auth tabs"
+              centered
+              variant="fullWidth"
+            >
+              <Tab label="Sign In" icon={<AccountCircle />} iconPosition="start" />
+              <Tab label="Register" icon={<AccountCircle />} iconPosition="start" />
+            </Tabs>
+          </Box>
+
+          {/* Alerts */}
+          {error && (
+            <Alert severity="error" sx={{ m: 2 }}>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" sx={{ m: 2 }}>
+              {success}
+            </Alert>
+          )}
+
+          {/* Login Tab */}
+          <TabPanel value={tabValue} index={0}>
+            <Box component="form" onSubmit={handleLoginSubmit}>
               <TextField
                 margin="normal"
                 required
@@ -75,8 +195,9 @@ function Login() {
                 name="email"
                 autoComplete="email"
                 autoFocus
-                value={formData.email}
-                onChange={handleChange}
+                value={loginData.email}
+                onChange={handleLoginChange}
+                variant="outlined"
               />
               <TextField
                 margin="normal"
@@ -84,38 +205,145 @@ function Login() {
                 fullWidth
                 name="password"
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 id="password"
                 autoComplete="current-password"
-                value={formData.password}
-                onChange={handleChange}
+                value={loginData.password}
+                onChange={handleLoginChange}
+                variant="outlined"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={loading}
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                disabled={isLoading}
+                size="large"
               >
-                {loading ? 'Signing In...' : 'Sign In'}
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </Button>
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={handleDemoLogin}
+                sx={{ mb: 2 }}
+              >
+                Use Demo Account
               </Button>
             </Box>
             
-            <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="body2" color="textSecondary">
-                Demo credentials:
+            <Paper sx={{ mt: 2, p: 2, bgcolor: 'grey.50' }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                <strong>Demo Accounts:</strong>
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                • Admin: admin@example.com / admin123
               </Typography>
               <Typography variant="body2">
-                Email: admin@example.com
+                • Operator: operator@example.com / operator123
               </Typography>
-              <Typography variant="body2">
-                Password: admin123
-              </Typography>
+            </Paper>
+          </TabPanel>
+
+          {/* Register Tab */}
+          <TabPanel value={tabValue} index={1}>
+            <Box component="form" onSubmit={handleRegisterSubmit}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="register-email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                value={registerData.email}
+                onChange={handleRegisterChange}
+                variant="outlined"
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                id="register-password"
+                value={registerData.password}
+                onChange={handleRegisterChange}
+                variant="outlined"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="confirmPassword"
+                label="Confirm Password"
+                type={showPassword ? 'text' : 'password'}
+                id="confirm-password"
+                value={registerData.confirmPassword}
+                onChange={handleRegisterChange}
+                variant="outlined"
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                select
+                name="role"
+                label="Role"
+                value={registerData.role}
+                onChange={handleRegisterChange}
+                variant="outlined"
+                SelectProps={{
+                  native: true,
+                }}
+              >
+                <option value="Operator">Operator</option>
+                <option value="Manager">Manager</option>
+                <option value="Admin">Admin</option>
+              </TextField>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                disabled={isLoading}
+                size="large"
+              >
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
             </Box>
-          </CardContent>
-        </Card>
-      </Box>
-    </Container>
+          </TabPanel>
+        </Paper>
+      </Container>
+    </Box>
   )
 }
 

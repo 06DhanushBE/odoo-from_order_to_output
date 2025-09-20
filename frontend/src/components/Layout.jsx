@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   AppBar,
@@ -17,6 +17,9 @@ import {
   Typography,
   Avatar,
   Divider,
+  Chip,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import {
   Dashboard as DashboardIcon,
@@ -25,22 +28,59 @@ import {
   Add as AddIcon,
   AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
+  Settings as SettingsIcon,
+  Work as WorkIcon,
+  Factory as FactoryIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material'
-import AuthContext from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 
 const drawerWidth = 280
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'New Manufacturing Order', icon: <AddIcon />, path: '/manufacturing-orders/new' },
-  { text: 'Bills of Materials', icon: <AssignmentIcon />, path: '/bills-of-materials' },
-  { text: 'Stock Ledger', icon: <InventoryIcon />, path: '/stock-ledger' },
+  { 
+    text: 'Dashboard', 
+    icon: <DashboardIcon />, 
+    path: '/',
+    description: 'Overview & KPIs'
+  },
+  { 
+    text: 'Manufacturing Orders', 
+    icon: <FactoryIcon />, 
+    path: '/manufacturing-orders',
+    description: 'Track production orders'
+  },
+  { 
+    text: 'Work Orders', 
+    icon: <WorkIcon />, 
+    path: '/work-orders',
+    description: 'Manage work tasks'
+  },
+  { 
+    text: 'Bills of Materials', 
+    icon: <AssignmentIcon />, 
+    path: '/bills-of-materials',
+    description: 'Product recipes'
+  },
+  { 
+    text: 'Stock Ledger', 
+    icon: <InventoryIcon />, 
+    path: '/stock-ledger',
+    description: 'Inventory tracking'
+  },
+  { 
+    text: 'New Order', 
+    icon: <AddIcon />, 
+    path: '/manufacturing-orders/new',
+    description: 'Create new order'
+  },
 ]
 
 function Layout({ children }) {
-  const { user, logout } = useContext(AuthContext)
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const theme = useTheme()
   const [anchorEl, setAnchorEl] = useState(null)
 
   const handleProfileMenuOpen = (event) => {
@@ -56,6 +96,15 @@ function Layout({ children }) {
     handleProfileMenuClose()
   }
 
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'Admin': return 'error'
+      case 'Manager': return 'warning'
+      case 'Operator': return 'success'
+      default: return 'default'
+    }
+  }
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -65,13 +114,28 @@ function Layout({ children }) {
         position="fixed"
         sx={{ 
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          backgroundColor: '#1976d2'
+          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
         }}
       >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Manufacturing Management System
+        <Toolbar sx={{ minHeight: 64 }}>
+          <FactoryIcon sx={{ mr: 2, fontSize: 28 }} />
+          <Typography variant="h5" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            Manufacturing System
           </Typography>
+          
+          <Chip 
+            label={user?.role || 'User'} 
+            color={getRoleColor(user?.role)}
+            variant="outlined"
+            size="small"
+            sx={{ 
+              mr: 2, 
+              color: 'white',
+              borderColor: alpha('#fff', 0.3),
+              '& .MuiChip-label': { color: 'white' }
+            }}
+          />
           
           <IconButton
             size="large"
@@ -81,8 +145,20 @@ function Layout({ children }) {
             aria-haspopup="true"
             onClick={handleProfileMenuOpen}
             color="inherit"
+            sx={{
+              '&:hover': {
+                backgroundColor: alpha('#fff', 0.1),
+              }
+            }}
           >
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+            <Avatar 
+              sx={{ 
+                width: 36, 
+                height: 36, 
+                bgcolor: 'secondary.main',
+                border: '2px solid rgba(255,255,255,0.3)'
+              }}
+            >
               {user?.email?.charAt(0)?.toUpperCase()}
             </Avatar>
           </IconButton>
@@ -101,16 +177,39 @@ function Layout({ children }) {
             }}
             open={Boolean(anchorEl)}
             onClose={handleProfileMenuClose}
+            PaperProps={{
+              elevation: 3,
+              sx: {
+                mt: 1,
+                borderRadius: 2,
+                minWidth: 200,
+              }
+            }}
           >
-            <MenuItem disabled>
-              <AccountCircleIcon sx={{ mr: 1 }} />
-              {user?.email}
-            </MenuItem>
-            <MenuItem disabled>
-              Role: {user?.role}
+            <MenuItem disabled sx={{ opacity: 1 }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {user?.email}
+                </Typography>
+                <Chip 
+                  label={user?.role} 
+                  size="small" 
+                  color={getRoleColor(user?.role)}
+                  sx={{ mt: 0.5 }}
+                />
+              </Box>
             </MenuItem>
             <Divider />
-            <MenuItem onClick={handleLogout}>
+            <MenuItem onClick={handleProfileMenuClose}>
+              <SettingsIcon sx={{ mr: 1 }} />
+              Profile Settings
+            </MenuItem>
+            <MenuItem onClick={handleProfileMenuClose}>
+              <AssessmentIcon sx={{ mr: 1 }} />
+              My Reports
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
               <LogoutIcon sx={{ mr: 1 }} />
               Logout
             </MenuItem>
@@ -127,51 +226,99 @@ function Layout({ children }) {
           [`& .MuiDrawer-paper`]: {
             width: drawerWidth,
             boxSizing: 'border-box',
-            backgroundColor: '#f5f5f5'
+            background: 'linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)',
+            borderRight: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
           },
         }}
       >
         <Toolbar />
         <Box sx={{ overflow: 'auto', mt: 2 }}>
-          <Typography variant="subtitle1" sx={{ px: 2, pb: 1, fontWeight: 'bold' }}>
+          <Typography 
+            variant="overline" 
+            sx={{ 
+              px: 3, 
+              pb: 1, 
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              color: 'text.secondary',
+              letterSpacing: 1
+            }}
+          >
             Master Menu
           </Typography>
-          <List>
-            {menuItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  selected={location.pathname === item.path}
-                  onClick={() => navigate(item.path)}
-                  sx={{
-                    '&.Mui-selected': {
-                      backgroundColor: '#e3f2fd',
-                      '&:hover': {
-                        backgroundColor: '#e3f2fd',
+          <List sx={{ px: 1 }}>
+            {menuItems.map((item) => {
+              const isSelected = location.pathname === item.path
+              return (
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    selected={isSelected}
+                    onClick={() => navigate(item.path)}
+                    sx={{
+                      borderRadius: 2,
+                      mx: 1,
+                      '&.Mui-selected': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                        },
                       },
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ color: location.pathname === item.path ? '#1976d2' : 'inherit' }}>
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={item.text} 
-                    sx={{ 
-                      '& .MuiListItemText-primary': {
-                        color: location.pathname === item.path ? '#1976d2' : 'inherit',
-                        fontWeight: location.pathname === item.path ? 'bold' : 'normal'
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.04),
                       }
                     }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
+                  >
+                    <ListItemIcon 
+                      sx={{ 
+                        color: isSelected ? 'primary.main' : 'text.secondary',
+                        minWidth: 40
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontWeight: isSelected ? 600 : 500,
+                            color: isSelected ? 'primary.main' : 'text.primary'
+                          }}
+                        >
+                          {item.text}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            color: 'text.secondary',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {item.description}
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )
+            })}
           </List>
         </Box>
       </Drawer>
 
       {/* Main content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          p: 3,
+          backgroundColor: 'background.default',
+          minHeight: '100vh'
+        }}
+      >
         <Toolbar />
         {children}
       </Box>
