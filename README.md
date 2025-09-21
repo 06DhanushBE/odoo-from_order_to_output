@@ -1,6 +1,9 @@
 # Manufacturing Management System
 
 A comprehensive manufacturing management system built with Flask backend and React frontend.
+# DEMO VIDEO
+
+[Watch the demo video here on Google Drive](https://drive.google.com/drive/folders/1zsdynef9unJqkYJBdu-NwWQuXv5HsHeR?usp=sharing)
 
 ## Features
 - 📦 **Stock Management**: Track inventory levels with real-time updates and price tracking
