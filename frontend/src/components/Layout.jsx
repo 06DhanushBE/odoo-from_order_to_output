@@ -31,7 +31,6 @@ import {
   Settings as SettingsIcon,
   Work as WorkIcon,
   Factory as FactoryIcon,
-  Assessment as AssessmentIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -194,10 +193,6 @@ function Layout({ children }) {
             <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/profile'); }}>
               <SettingsIcon sx={{ mr: 1 }} />
               Profile Settings
-            </MenuItem>
-            <MenuItem onClick={handleProfileMenuClose}>
-              <AssessmentIcon sx={{ mr: 1 }} />
-              My Reports
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>

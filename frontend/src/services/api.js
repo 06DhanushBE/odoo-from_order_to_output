@@ -66,6 +66,7 @@ export const workOrdersAPI = {
   getByOrderId: (orderId) => api.get(`/work-orders/${orderId}`),
   update: (id, data) => api.put(`/work-orders/${id}`, data),
   complete: (id, data) => api.post(`/work-orders/${id}/complete`, data),
+  assign: (id, data) => api.post(`/work-orders/${id}/assign`, data),
 }
 
 export const dashboardAPI = {

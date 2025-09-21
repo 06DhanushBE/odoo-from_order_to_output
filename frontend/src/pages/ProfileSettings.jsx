@@ -45,9 +45,13 @@ import {
   Badge as BadgeIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
+  Assessment as ReportsIcon,
+  SmartToy as AIIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
+import ProfileReports from '../components/ProfileReports'
+import AIReportChat from '../components/AIReportChat'
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -257,6 +261,8 @@ function ProfileSettings() {
           <Tab icon={<PersonIcon />} label="Profile" />
           <Tab icon={<SecurityIcon />} label="Security" />
           <Tab icon={<NotificationsIcon />} label="Notifications" />
+          <Tab icon={<ReportsIcon />} label="Reports" />
+          <Tab icon={<AIIcon />} label="AI Reports" />
         </Tabs>
 
         {/* Profile Tab */}
@@ -524,6 +530,16 @@ function ProfileSettings() {
               </Card>
             </Grid>
           </Grid>
+        </TabPanel>
+
+        {/* Reports Tab */}
+        <TabPanel value={tabValue} index={3}>
+          <ProfileReports />
+        </TabPanel>
+
+        {/* AI Reports Tab */}
+        <TabPanel value={tabValue} index={4}>
+          <AIReportChat />
         </TabPanel>
       </Paper>
 

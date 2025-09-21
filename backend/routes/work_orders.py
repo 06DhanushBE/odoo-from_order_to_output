@@ -168,3 +168,30 @@ def complete_work_order(current_user, wo_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': str(e)}), 400
+
+@work_orders_bp.route('/<int:work_order_id>/assign', methods=['POST'])
+@token_required
+def assign_work_order(current_user, work_order_id):
+    try:
+        work_order = WorkOrder.query.get_or_404(work_order_id)
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'message': 'No data provided'}), 400
+        
+        # Update assignment info
+        assigned_to = data.get('assigned_to', '').strip()
+        if not assigned_to:
+            return jsonify({'message': 'Assigned to field is required'}), 400
+        
+        work_order.assigned_to = assigned_to
+        
+        # If work order is currently PENDING, change status to ASSIGNED
+        if work_order.status == WorkOrderStatus.PENDING:
+            work_order.status = WorkOrderStatus.ASSIGNED
+        
+        db.session.commit()
+        return jsonify(work_order.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Failed to assign work order: {str(e)}'}), 400

@@ -27,6 +27,7 @@ import {
   Alert,
   LinearProgress,
   Tooltip,
+  Snackbar,
   alpha,
   useTheme,
 } from '@mui/material'
@@ -45,10 +46,11 @@ import {
 import { manufacturingOrdersAPI, workOrdersAPI } from '../services/api'
 
 const workOrderStatuses = {
-  'Pending': { color: 'info', icon: <Schedule /> },
-  'Started': { color: 'warning', icon: <PlayArrow /> },
-  'Paused': { color: 'secondary', icon: <Pause /> },
-  'Completed': { color: 'success', icon: <CheckCircle /> },
+  'PENDING': { color: 'info', icon: <Schedule /> },
+  'ASSIGNED': { color: 'primary', icon: <Assignment /> },
+  'STARTED': { color: 'warning', icon: <PlayArrow /> },
+  'PAUSED': { color: 'secondary', icon: <Pause /> },
+  'COMPLETED': { color: 'success', icon: <CheckCircle /> },
 }
 
 function WorkOrders() {
@@ -59,6 +61,7 @@ function WorkOrders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editDialog, setEditDialog] = useState({ open: false, workOrder: null })
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
 
   useEffect(() => {
     loadData()
@@ -158,9 +161,31 @@ function WorkOrders() {
     setEditDialog({ open: true, workOrder: { ...workOrder } })
   }
 
-  const handleSaveWorkOrder = () => {
-    // In a real implementation, save the work order via API
-    setEditDialog({ open: false, workOrder: null })
+  const handleSaveWorkOrder = async () => {
+    try {
+      const workOrderData = {
+        assigned_to: editDialog.workOrder.assigned_to
+      }
+      
+      await workOrdersAPI.assign(editDialog.workOrder.id, workOrderData)
+      
+      // Refresh the work orders list
+      loadData()
+      
+      setEditDialog({ open: false, workOrder: null })
+      setSnackbar({
+        open: true,
+        message: 'Work order assigned successfully!',
+        severity: 'success'
+      })
+    } catch (error) {
+      console.error('Error assigning work order:', error)
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to assign work order',
+        severity: 'error'
+      })
+    }
   }
 
   const getStatusActions = (workOrder) => {
@@ -168,12 +193,12 @@ function WorkOrders() {
     const actions = []
 
     switch (status) {
-      case 'Pending':
+      case 'PENDING':
         actions.push(
           <Tooltip key="start" title="Start Work Order">
             <IconButton 
               color="success" 
-              onClick={() => handleStatusUpdate(workOrder.id, 'Started')}
+              onClick={() => handleStatusUpdate(workOrder.id, 'STARTED')}
               size="small"
             >
               <PlayArrow />
@@ -181,12 +206,25 @@ function WorkOrders() {
           </Tooltip>
         )
         break
-      case 'Started':
+      case 'ASSIGNED':
+        actions.push(
+          <Tooltip key="start" title="Start Work Order">
+            <IconButton 
+              color="success" 
+              onClick={() => handleStatusUpdate(workOrder.id, 'STARTED')}
+              size="small"
+            >
+              <PlayArrow />
+            </IconButton>
+          </Tooltip>
+        )
+        break
+      case 'STARTED':
         actions.push(
           <Tooltip key="pause" title="Pause Work Order">
             <IconButton 
               color="warning" 
-              onClick={() => handleStatusUpdate(workOrder.id, 'Paused')}
+              onClick={() => handleStatusUpdate(workOrder.id, 'PAUSED')}
               size="small"
             >
               <Pause />
@@ -203,12 +241,12 @@ function WorkOrders() {
           </Tooltip>
         )
         break
-      case 'Paused':
+      case 'PAUSED':
         actions.push(
           <Tooltip key="resume" title="Resume Work Order">
             <IconButton 
               color="success" 
-              onClick={() => handleStatusUpdate(workOrder.id, 'Started')}
+              onClick={() => handleStatusUpdate(workOrder.id, 'STARTED')}
               size="small"
             >
               <PlayArrow />
@@ -560,6 +598,21 @@ function WorkOrders() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

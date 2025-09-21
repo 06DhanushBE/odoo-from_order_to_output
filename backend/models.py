@@ -19,10 +19,11 @@ class OrderStatus(enum.Enum):
     CANCELED = "Canceled"
 
 class WorkOrderStatus(enum.Enum):
-    PENDING = "Pending"
-    STARTED = "Started"
-    PAUSED = "Paused"
-    COMPLETED = "Completed"
+    PENDING = "PENDING"
+    ASSIGNED = "ASSIGNED" 
+    STARTED = "STARTED"
+    PAUSED = "PAUSED"
+    COMPLETED = "COMPLETED"
 
 class WorkCenter(db.Model):
     __tablename__ = 'work_centers'

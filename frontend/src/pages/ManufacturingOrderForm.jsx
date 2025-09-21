@@ -29,7 +29,6 @@ import {
   TablePagination,
   Fab,
   InputAdornment,
-  Collapse,
   Stack,
 } from '@mui/material'
 import {
@@ -41,9 +40,6 @@ import {
   PlayArrow as StartIcon,
   Pause as PauseIcon,
   Check as CompleteIcon,
-  FilterList as FilterIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material'
 import { manufacturingOrdersAPI, bomsAPI } from '../services/api'
 
@@ -64,10 +60,8 @@ function ManufacturingOrders() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   
-  // Filters
+  // Search
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
   
   // Form data
   const [formData, setFormData] = useState({
@@ -234,10 +228,8 @@ function ManufacturingOrders() {
   }
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.id?.toString().includes(searchTerm)
-    const matchesStatus = !statusFilter || order.status === statusFilter
-    return matchesSearch && matchesStatus
+    return order.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           order.id?.toString().includes(searchTerm)
   })
 
   const paginatedOrders = filteredOrders.slice(
@@ -286,37 +278,7 @@ function ManufacturingOrders() {
               }}
               sx={{ flexGrow: 1 }}
             />
-            <Button
-              variant="outlined"
-              startIcon={<FilterIcon />}
-              endIcon={showFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Filters
-            </Button>
           </Box>
-          
-          <Collapse in={showFilters}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={statusFilter}
-                    label="Status"
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    <MenuItem value="draft">Draft</MenuItem>
-                    <MenuItem value="confirmed">Confirmed</MenuItem>
-                    <MenuItem value="in_progress">In Progress</MenuItem>
-                    <MenuItem value="completed">Completed</MenuItem>
-                    <MenuItem value="cancelled">Cancelled</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Collapse>
         </CardContent>
       </Card>
 
